@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Takes a configuration file name and a variable number of suite names.
+# Will run each suite with the given configuration in parallel
+#
+# Example:
+#
+#   protractor-parallel protractor.conf.js suite1.js suite2.js
+#
+# Exit code will signal the number of failed suites
+
+FAILING_SUBPROCESS=0
+
+for spec in ${*:2}; do
+  ( protractor "$1" --specs="$spec" )&
+done
+
+# All suites run as background jobs.
+# Iterate over them, wait for each to finish and capture any potential exit codes
+for job in $(jobs -p); do
+  wait "$job" || let "FAILING_SUBPROCESS+=1"
+done
+
+# Should return 0 unless any subprocess failed
+exit $FAILING_SUBPROCESS;
